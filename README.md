@@ -1,7 +1,7 @@
 # SonosUPnP
 
 
-Fork From original Sonos library : https://github.com/javos65/Sonos-ESP32
+Fork From Sonos library : https://github.com/javos65/Sonos-ESP32
 
 Issue - Sonos Play 5 was almost never found, or accidently as a side effect of Windows PC also regularly sending out SSDP requests. 
 Improved the scan/search. The original code would often miss certain Sonos devices or add them multiple times to the same short list of max 4 devices.
