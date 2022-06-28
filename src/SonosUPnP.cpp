@@ -1070,15 +1070,21 @@ void SonosUPnP::ethClient_stop()
 // JV : SSDP over UDP to scan for uPnP on port 1400 : Sonos, and load then into the IP list 
 uint8_t SonosUPnP::CheckUPnP(IPAddress *List,int Listsize)
 {
-  #define SSDPUDP_TIMEOUT 8
+  #define SSDPUDP_TIMEOUT 40
   int u,n,t=0;
   uint8_t match,buffercounter,found=0;
   char c;
   char udpbuffer[33]; udpbuffer[32]=0;        // mark last buffer item as a zero
   WiFiUDP SSDP_UDP;                           // A UDP instance to let us send and receive packets over UDP  
-  IPAddress tmpIP; 
+  IPAddress remoteIP;
+  
   
   SSDP_UDP.begin(1900);
+     // FB: Added extra SSDP request as some Sonos devices don't seem to respond to 239,255,255,250 
+     SSDP_UDP.beginPacket(IPAddress(255,255,255,255), 1900);        //SSDP request at port 1900
+     SSDP_UDP.write((const uint8_t*)p_UPnPBroadcast, sizeof(p_UPnPBroadcast));     // fb cast
+     SSDP_UDP.endPacket();
+     // original request     
      SSDP_UDP.beginPacket(IPAddress(239,255,255,250), 1900);        //SSDP request at port 1900
      SSDP_UDP.write(p_UPnPBroadcast, sizeof(p_UPnPBroadcast));
      SSDP_UDP.endPacket();
@@ -1087,11 +1093,12 @@ uint8_t SonosUPnP::CheckUPnP(IPAddress *List,int Listsize)
 #endif    
   while(t<SSDPUDP_TIMEOUT)
     {   // wait to see if a reply is available
-    t++;delay(500);
+    t++;delay(100);
     while (n=SSDP_UDP.parsePacket())
        {
+       remoteIP = SSDP_UDP.remoteIP(); // who send this packet?
 #if DEBUG_XPATH
-    Serial.print("* Reading packet of ");Serial.print(n);Serial.println("bytes");
+    Serial.print("* Reading packet(");Serial.print(pc++);Serial.print(") of ");Serial.print(n);Serial.print(" bytes from IP:");Serial.println(remoteIP);
 #endif 
        char string1[]=":1400"; match=0; buffercounter=0;
        for(u=0;u<n;++u)
@@ -1107,11 +1114,29 @@ uint8_t SonosUPnP::CheckUPnP(IPAddress *List,int Listsize)
               Serial.print("* uPnP:1400 found ");
 #endif               
               if (found<Listsize){
-                  readback_IP(&tmpIP,udpbuffer,buffercounter,32);
-                  List[found]=tmpIP;
-                  found++;
+                  // readback_IP(&tmpIP,udpbuffer,buffercounter,32);
+                  // check if it is really a new uPnP encountered here
+                  if(found>0)
+                  { // Serial.print("Found another Sonos:"); Serial.print(remoteIP);
+                    for (n2=0;n2<found;n2++)
+                    { if(remoteIP==List[n2])
+                      {  // Serial.print(" which is the same as:"); Serial.print(List[n2]);
+                         break;
+                      }
+                    }
+                    if(n2==found)
+                    { S// erial.print(" and that is a new one:"); Serial.print(remoteIP);
+                      List[found] = remoteIP;
+                      found++;
+                    }
+                  }
+                  else
+                  { // Serial.print("First Sonos found:"); Serial.print(remoteIP);
+                    List[found]=remoteIP;
+                    found++;
+                  }
 #if DEBUG_XGEN
-              Serial.print("* IPAddress:");Serial.println(tmpIP);
+              Serial.print("* IPAddress:");Serial.println(remoteIP);
 #endif                   
                  }
               else {
@@ -1138,36 +1163,6 @@ if (found > 0) {
 for(t=found;t<Listsize;++t) List[t]= IPAddress(0,0,0,0); // Fill remaining list with 0.0.0.0-IP
 return found;
 }
-
-// Parse IP in looped string "***www.xxx.yyy.zzz:1400***"
-void SonosUPnP::readback_IP(IPAddress *IPa,char* buf,char pointer,char bufsize)
-{
-int t,digit,decimal;
-IPAddress tmpIP(0,0,0,0);
-
-for(t=0;t<5;++t){ // turn back pointer 5 places - looped
-  if (pointer ==0) pointer=31;
-  else pointer = pointer-1;
-  }
-digit=0;decimal=1;
-for(t=0;t<4;++t) {
-   while( buf[pointer]>47 && buf[pointer]<58){  // as long as digit : count on
-      digit=digit+(buf[pointer]-48)*decimal;
-      decimal=decimal*10;
-         if (pointer ==0) pointer=31;  // loop pointer back
-         else pointer = pointer-1; 
-      }
-  tmpIP[3-t]= digit;  // end of digit found
-  decimal=1;
-  digit=0;
-     if (pointer ==0) pointer=31;  // loop pointer back
-     else pointer = pointer-1;   
-  }
-*IPa=tmpIP; // copy Ipadress into pointer to give back
-}
-
-
-
 
 
 
