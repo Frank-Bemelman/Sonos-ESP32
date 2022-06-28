@@ -64,7 +64,9 @@
 #define UPNP_MULTICAST_PORT 1900
 #define UPNP_MULTICAST_TIMEOUT_S 2
 #define UPNP_RESPONSE_TIMEOUT_MS 3000
-#define UPNP_DEVICE_SCAN "M-SEARCH * HTTP/1.1\nHOST: 239.255.255.250:1900\nMAN: \"ssdp:discover\"\nMX: 2\nST: urn:schemas-upnp-org:device:ZonePlayer:1\n\0"
+#define UPNP_DEVICE_SCAN "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1\r\n\0"
+//#define UPNP_DEVICE_SCAN "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: ssdp:all\r\n\0"
+
 
 // UPnP tag data:
 #define SOAP_ACTION_START_TAG_START "<u:"
